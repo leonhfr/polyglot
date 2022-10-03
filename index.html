@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="stylesheet" href="css/pico.min.css" />
+    <link rel="stylesheet" href="css/chessboard-1.0.0.min.css" />
+    <style type="text/css">
+      .highlight1 {
+        box-shadow: inset 0 0 3px 3px #8fbcbb;
+      }
+      .highlight2 {
+        box-shadow: inset 0 0 3px 3px #88c0d0;
+      }
+      .highlight3 {
+        box-shadow: inset 0 0 3px 3px #81a1c1;
+      }
+      .highlight4 {
+        box-shadow: inset 0 0 3px 3px #5e81ac;
+      }
+    </style>
+    <script src="js/jquery-3.5.1.min.js"></script>
+    <script src="js/chessboard-1.0.0.min.js"></script>
+    <script src="js/wasm_exec.js"></script>
+    <script>
+      const go = new Go();
+      WebAssembly.instantiateStreaming(
+        fetch('wasm/polyglot.wasm'),
+        go.importObject
+      ).then((result) => {
+        go.run(result.instance);
+
+        wasmLoad();
+      });
+    </script>
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <hgroup>
+          <h1>Polyglot</h1>
+          <h2>Explore polyglot opening books</h2>
+        </hgroup>
+      </header>
+      <main>
+        <form>
+          <label for="fen">Enter the position in FEN format:</label>
+          <input
+            id="fen"
+            placeholder="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+            required
+          />
+        </form>
+        <div class="grid">
+          <div id="chessboard" style="width: 100%"></div>
+          <div></div>
+        </div>
+      </main>
+      <footer>
+        <p></p>
+        <p>
+          Made by <a href="https://github.com/leonhfr">leonhfr</a>. All contents
+          published under the
+          <a href="https://creativecommons.org/licenses/by-sa/4.0/"
+            >CC BY-SA 4.0</a
+          >
+          license.
+        </p>
+      </footer>
+    </div>
+    <script>
+      const squareClass = 'square-55d63';
+      const board = Chessboard('chessboard', 'start');
+      const $board = $('#chessboard');
+
+      function removeClasses() {
+        for (let i = 0; i < 5; i++) {
+          $board.find('.' + squareClass).removeClass(`highlight${i + 1}`);
+        }
+      }
+
+      function fenChange() {
+        const fen = document.querySelector('#fen').value.trim();
+        board.position(fen, false);
+        const moves = polyglotLookup(fen);
+
+        removeClasses();
+
+        const entries = Object.entries(moves);
+        for (let i = 0; i < entries.length; i++) {
+          const move = entries[i][0];
+          const from = move.substring(0, 2);
+          const to = move.substring(2);
+
+          $board.find('.square-' + from).addClass(`highlight${i + 1}`);
+          $board.find('.square-' + to).addClass(`highlight${i + 1}`);
+        }
+      }
+
+      function wasmLoad() {
+        document.querySelector('#fen').addEventListener('input', fenChange);
+        fenChange();
+      }
+    </script>
+  </body>
+</html>
